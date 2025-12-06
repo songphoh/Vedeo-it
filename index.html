@@ -5,6 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NithanAI - Story Generator</title>
+    <!-- Keep Tailwind CDN for simplicity in this setup, or migrate to PostCSS in future steps -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -29,19 +30,21 @@
         animation: fade-in 0.5s ease-in-out;
       }
     </style>
+    <!-- Google Identity Services for Drive API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script type="importmap">
 {
   "imports": {
     "react/": "https://aistudiocdn.com/react@^19.2.1/",
     "react": "https://aistudiocdn.com/react@^19.2.1",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0"
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0",
+    "vite": "https://aistudiocdn.com/vite@^7.2.6",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
 }
 </script>
-<!-- Google Identity Services for Drive API -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
   <body>
     <div id="root"></div>
