@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, BookOpen, Loader2, Upload, X, LayoutDashboard, Plus, Menu, StopCircle, Mic, Film, Clock, Music, User, Settings2, Subtitles, Languages, Key } from 'lucide-react';
+import { Sparkles, BookOpen, Loader2, Upload, X, LayoutDashboard, Plus, Menu, StopCircle, Mic, Film, Clock, Music, User, Settings2, Subtitles, Languages, Key, AlertCircle } from 'lucide-react';
 import { AppState, StoryData, GeneratedSceneMedia, HistoryItem, StoryMode, StoryConfig, VoiceGender, VoiceTone, SubtitleLang } from './types';
 import { generateStoryScript, generateLongStoryScript, generateSceneImage, generateSceneAudio, mapVoiceConfig } from './services/geminiService';
 import { decodeAudioData } from './services/audioUtils';
@@ -10,6 +10,7 @@ import Dashboard from './components/Dashboard';
 function App() {
   // API Key State
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [isAIStudio, setIsAIStudio] = useState(false);
 
   const [prompt, setPrompt] = useState('');
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
@@ -40,11 +41,16 @@ function App() {
     const checkApiKey = async () => {
       // Check if running in AI Studio / Project IDX environment
       if ((window as any).aistudio) {
+        setIsAIStudio(true);
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
         setHasApiKey(hasKey);
       } else if (process.env.API_KEY) {
-        // Fallback for local dev or if key is already injected
+        // Fallback for Vercel / Local dev if Env Var is set
+        setIsAIStudio(false);
         setHasApiKey(true);
+      } else {
+        setIsAIStudio(false);
+        setHasApiKey(false);
       }
     };
     checkApiKey();
@@ -468,18 +474,37 @@ function App() {
                 </div>
                 
                 <div className="space-y-4">
-                    <button 
-                        onClick={handleConnectApiKey}
-                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-xl hover:shadow-indigo-500/25 flex items-center justify-center gap-3 group"
-                    >
-                        <Key size={20} className="group-hover:rotate-12 transition-transform"/>
-                        Connect Gemini API
-                    </button>
-                    
-                    <div className="text-xs text-slate-500 px-4">
-                        By connecting, you agree to use your own API key. 
-                        Get a paid key from <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline transition-colors">Google AI Studio</a>.
-                    </div>
+                    {isAIStudio ? (
+                        <>
+                            <button 
+                                onClick={handleConnectApiKey}
+                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-xl hover:shadow-indigo-500/25 flex items-center justify-center gap-3 group"
+                            >
+                                <Key size={20} className="group-hover:rotate-12 transition-transform"/>
+                                Connect Gemini API
+                            </button>
+                            <div className="text-xs text-slate-500 px-4">
+                                By connecting, you agree to use your own API key. 
+                                Get a paid key from <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline transition-colors">Google AI Studio</a>.
+                            </div>
+                        </>
+                    ) : (
+                        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-left">
+                            <h3 className="text-yellow-400 font-bold mb-2 flex items-center gap-2 text-sm">
+                                <AlertCircle size={16} /> API Key Configuration Required
+                            </h3>
+                            <p className="text-slate-400 text-xs leading-relaxed">
+                                You are running this app outside of Google AI Studio (e.g., Vercel, Localhost).
+                            </p>
+                            <div className="mt-3 text-slate-300 text-xs">
+                                <p className="mb-1">To enable Gemini features, please set the Environment Variable:</p>
+                                <code className="block bg-black/30 p-2 rounded text-indigo-400 font-mono">API_KEY=AIzaSy...</code>
+                            </div>
+                            <div className="mt-3 text-[10px] text-slate-500">
+                                In Vercel: Go to Settings &gt; Environment Variables.
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
