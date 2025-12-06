@@ -1,13 +1,18 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, BookOpen, Loader2, Upload, X, LayoutDashboard, Plus, Menu, StopCircle, Mic, Film, Clock, Music, User, Settings2, Subtitles, Languages, Key, AlertCircle } from 'lucide-react';
+import { Sparkles, BookOpen, Loader2, Upload, X, LayoutDashboard, Plus, Menu, StopCircle, Mic, Film, Clock, Music, User, Settings2, Subtitles, Languages, Key, AlertCircle, LogOut } from 'lucide-react';
 import { AppState, StoryData, GeneratedSceneMedia, HistoryItem, StoryMode, StoryConfig, VoiceGender, VoiceTone, SubtitleLang } from './types';
 import { generateStoryScript, generateLongStoryScript, generateSceneImage, generateSceneAudio, mapVoiceConfig } from './services/geminiService';
 import { decodeAudioData } from './services/audioUtils';
+import { parseJwt } from './services/authService';
 import StoryPlayer from './components/StoryPlayer';
 import Dashboard from './components/Dashboard';
+import LoginScreen from './components/LoginScreen';
 
 function App() {
+  // Auth State
+  const [user, setUser] = useState<any>(null);
+  const [isLoginChecked, setIsLoginChecked] = useState(false);
+
   // API Key State
   const [hasApiKey, setHasApiKey] = useState(false);
   const [isAIStudio, setIsAIStudio] = useState(false);
@@ -36,6 +41,18 @@ function App() {
   // Cancellation Ref
   const isCancelledRef = useRef(false);
 
+  // Check Auth Session
+  useEffect(() => {
+    const token = localStorage.getItem('user_token');
+    if (token) {
+      const userData = parseJwt(token);
+      if (userData) {
+        setUser(userData);
+      }
+    }
+    setIsLoginChecked(true);
+  }, []);
+
   // Check for API Key on mount
   useEffect(() => {
     const checkApiKey = async () => {
@@ -56,13 +73,22 @@ function App() {
     checkApiKey();
   }, []);
 
+  const handleLoginSuccess = (userData: any) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user_token');
+    setUser(null);
+    window.location.reload(); // Force refresh to clear any Google session states if needed
+  };
+
   const handleConnectApiKey = async () => {
     if ((window as any).aistudio) {
       try {
         await (window as any).aistudio.openSelectKey();
-        // Check again after modal closes
-        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-        setHasApiKey(hasKey);
+        // Guideline: Assume success immediately to avoid race condition
+        setHasApiKey(true);
       } catch (e) {
         console.error("API Key selection failed", e);
       }
@@ -204,7 +230,7 @@ function App() {
             </h1>
         </div>
         
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 flex-1">
             <button 
                 onClick={() => { setCurrentView('create'); setIsSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition font-medium ${currentView === 'create' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
@@ -221,14 +247,19 @@ function App() {
             </button>
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-             <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-                <p className="text-xs text-slate-400 mb-2">Session Status</p>
-                <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    System Online
-                </div>
-             </div>
+        <div className="p-4 border-t border-slate-800">
+             {user && (
+                 <div className="flex items-center gap-3 mb-4 px-2">
+                    <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full border border-slate-600" />
+                    <div className="flex-1 overflow-hidden">
+                        <p className="text-white text-sm font-medium truncate">{user.name}</p>
+                        <p className="text-slate-500 text-xs truncate">{user.email}</p>
+                    </div>
+                 </div>
+             )}
+             <button onClick={handleLogout} className="w-full flex items-center gap-2 text-slate-400 hover:text-white text-sm px-2 py-2 rounded-lg hover:bg-slate-800 transition">
+                <LogOut size={16} /> ออกจากระบบ
+             </button>
         </div>
     </div>
   );
@@ -445,6 +476,14 @@ function App() {
         )}
     </div>
   );
+
+  // If loading auth state
+  if (!isLoginChecked) return null;
+
+  // If not logged in, show login screen
+  if (!user) {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
 
   // If no API key, show connect screen
   if (!hasApiKey) {
