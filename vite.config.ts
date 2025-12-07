@@ -12,7 +12,8 @@ export default defineConfig(({ mode }) => {
     define: {
       // Define 'process.env' variables to be replaced during build
       'process.env.API_KEY': JSON.stringify(env.API_KEY),
-      'process.env.GOOGLE_CLIENT_ID': JSON.stringify(env.GOOGLE_CLIENT_ID),
+      // Use the provided Client ID as default if not found in env
+      'process.env.GOOGLE_CLIENT_ID': JSON.stringify(env.GOOGLE_CLIENT_ID || "441626360118-fpn3bpdrpc1n4c5ucqussq5me8djesoh.apps.googleusercontent.com"),
     }
   };
 });

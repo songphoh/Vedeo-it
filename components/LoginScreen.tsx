@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
+import { ShieldCheck, Sparkles, UserCheck, Settings, AlertTriangle } from 'lucide-react';
 import { parseJwt } from '../services/authService';
 
 interface LoginScreenProps {
@@ -11,8 +11,17 @@ declare const google: any;
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [isHuman, setIsHuman] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isClientIdMissing, setIsClientIdMissing] = useState(false);
 
   useEffect(() => {
+    // Check if Client ID is configured via Vite define replacement
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    
+    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER') {
+        setIsClientIdMissing(true);
+        return;
+    }
+
     if (isHuman) {
       // Initialize Google Sign-In Button only after Human Check
       try {
@@ -22,7 +31,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         }
 
         google.accounts.id.initialize({
-          client_id: process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER", // Fallback or Env
+          client_id: clientId,
           callback: (response: any) => {
             const user = parseJwt(response.credential);
             if (user) {
@@ -36,7 +45,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
         google.accounts.id.renderButton(
           document.getElementById("googleSignInBtn"),
-          { theme: "filled_black", size: "large", shape: "pill", width: "250" }
+          { theme: "filled_black", size: "large", shape: "pill", width: "280" }
         );
       } catch (e) {
         console.error("Google Sign-in Error", e);
@@ -44,6 +53,41 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       }
     }
   }, [isHuman, onLoginSuccess]);
+
+  if (isClientIdMissing) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center bg-[#0f172a] font-['Prompt'] p-6">
+            <div className="max-w-lg w-full bg-slate-900 border border-slate-700 p-8 rounded-3xl shadow-2xl space-y-6">
+                <div className="flex items-center gap-3 text-yellow-500">
+                    <AlertTriangle size={32} />
+                    <h2 className="text-2xl font-bold">Setup Required</h2>
+                </div>
+                <div className="bg-slate-800/50 p-4 rounded-xl text-slate-300 text-sm space-y-4 border border-slate-700">
+                    <p>ระบบ Google Login ยังไม่พร้อมใช้งานเนื่องจากยังไม่ได้ตั้งค่า <strong>Google Client ID</strong></p>
+                    
+                    <div className="space-y-2">
+                        <p className="font-bold text-white">วิธีแก้ไข (สำหรับ Admin):</p>
+                        <ol className="list-decimal list-inside space-y-1 text-slate-400">
+                            <li>ไปที่ <a href="https://console.cloud.google.com/" target="_blank" className="text-indigo-400 underline">Google Cloud Console</a> สร้าง Project ใหม่</li>
+                            <li>สร้าง <strong>OAuth Client ID</strong> (Web Application)</li>
+                            <li>เพิ่ม Authorized Origin: <code className="bg-black/30 px-1 rounded">https://your-app.vercel.app</code></li>
+                            <li>นำ Client ID ไปใส่ใน Environment Variables ของ Vercel:</li>
+                        </ol>
+                        <div className="bg-black/50 p-3 rounded-lg font-mono text-xs text-green-400 mt-2 break-all">
+                            GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+                        </div>
+                    </div>
+                </div>
+                <button 
+                    onClick={() => window.location.reload()}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition"
+                >
+                    ตรวจสอบการตั้งค่าอีกครั้ง
+                </button>
+            </div>
+        </div>
+      );
+  }
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-[#0f172a] relative overflow-hidden font-['Prompt']">
@@ -81,21 +125,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                       </div>
                    </div>
                    <span className="text-slate-300 font-medium text-sm group-hover:text-white">
-                      ฉันไม่ใช่โปรแกรมอัตโนมัติ (I am human)
+                      ฉันไม่ใช่โปรแกรมอัตโนมัติ
                    </span>
                 </label>
              </div>
 
              {/* Step 2: Google Login */}
-             <div className={`transition-all duration-700 transform ${isHuman ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-                 <div className="relative flex flex-col items-center gap-3">
-                    <div id="googleSignInBtn" className="h-[44px]"></div>
-                    {process.env.GOOGLE_CLIENT_ID ? null : (
-                      <p className="text-xs text-yellow-500/80 mt-2 max-w-[250px]">
-                        *Environment Variable 'GOOGLE_CLIENT_ID' is missing. Button may not appear.
-                      </p>
-                    )}
-                 </div>
+             <div className={`transition-all duration-700 transform flex flex-col items-center gap-2 min-h-[50px] ${isHuman ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                 {isHuman && <div id="googleSignInBtn"></div>}
              </div>
           </div>
 
@@ -105,8 +142,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
              </div>
           )}
 
-          <div className="text-[10px] text-slate-600 mt-8">
-             Secure Login powered by Google Identity Services
+          <div className="text-[10px] text-slate-600 mt-8 flex items-center gap-1">
+             <ShieldCheck size={10} /> Secure Login powered by Google Identity Services
           </div>
        </div>
     </div>

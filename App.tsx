@@ -3,15 +3,16 @@ import { Sparkles, BookOpen, Loader2, Upload, X, LayoutDashboard, Plus, Menu, St
 import { AppState, StoryData, GeneratedSceneMedia, HistoryItem, StoryMode, StoryConfig, VoiceGender, VoiceTone, SubtitleLang } from './types';
 import { generateStoryScript, generateLongStoryScript, generateSceneImage, generateSceneAudio, mapVoiceConfig } from './services/geminiService';
 import { decodeAudioData } from './services/audioUtils';
-import { parseJwt } from './services/authService';
 import StoryPlayer from './components/StoryPlayer';
 import Dashboard from './components/Dashboard';
-import LoginScreen from './components/LoginScreen';
 
 function App() {
-  // Auth State
-  const [user, setUser] = useState<any>(null);
-  const [isLoginChecked, setIsLoginChecked] = useState(false);
+  // Auth State - Default to Guest for immediate access
+  const [user, setUser] = useState<any>({
+    name: 'Guest Creator',
+    email: 'guest@nithan.ai',
+    picture: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Felix'
+  });
 
   // API Key State
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -41,18 +42,6 @@ function App() {
   // Cancellation Ref
   const isCancelledRef = useRef(false);
 
-  // Check Auth Session
-  useEffect(() => {
-    const token = localStorage.getItem('user_token');
-    if (token) {
-      const userData = parseJwt(token);
-      if (userData) {
-        setUser(userData);
-      }
-    }
-    setIsLoginChecked(true);
-  }, []);
-
   // Check for API Key on mount
   useEffect(() => {
     const checkApiKey = async () => {
@@ -73,14 +62,11 @@ function App() {
     checkApiKey();
   }, []);
 
-  const handleLoginSuccess = (userData: any) => {
-    setUser(userData);
-  };
-
   const handleLogout = () => {
-    localStorage.removeItem('user_token');
-    setUser(null);
-    window.location.reload(); // Force refresh to clear any Google session states if needed
+    // Just refresh the page or show a message in Guest mode
+    if (confirm("Reset application state?")) {
+        window.location.reload();
+    }
   };
 
   const handleConnectApiKey = async () => {
@@ -257,9 +243,6 @@ function App() {
                     </div>
                  </div>
              )}
-             <button onClick={handleLogout} className="w-full flex items-center gap-2 text-slate-400 hover:text-white text-sm px-2 py-2 rounded-lg hover:bg-slate-800 transition">
-                <LogOut size={16} /> ออกจากระบบ
-             </button>
         </div>
     </div>
   );
@@ -476,14 +459,6 @@ function App() {
         )}
     </div>
   );
-
-  // If loading auth state
-  if (!isLoginChecked) return null;
-
-  // If not logged in, show login screen
-  if (!user) {
-    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
-  }
 
   // If no API key, show connect screen
   if (!hasApiKey) {
